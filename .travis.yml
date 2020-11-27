@@ -11,14 +11,14 @@ script:
   - |
     # Check if env `TAG_TESTING` has length equal to zero
     if [[ -z "${TAG_TESTING}" ]]; then
-      docker build -t stellar-travis .
+      docker build -t aiblocks-travis .
     else
-      docker build -f Dockerfile.testing -t stellar-travis .
+      docker build -f Dockerfile.testing -t aiblocks-travis .
     fi
 
-    docker run --rm -d -p "8000:8000" --name stellar stellar-travis --$NETWORK
+    docker run --rm -d -p "8000:8000" --name aiblocks aiblocks-travis --$NETWORK
 
     sleep 10 # sleep until supervisor is up
-    echo "supervisorctl tail -f stellar-core" | docker exec -i stellar sh &
-    echo "supervisorctl tail -f horizon" | docker exec -i stellar sh &
+    echo "supervisorctl tail -f aiblocks-core" | docker exec -i aiblocks sh &
+    echo "supervisorctl tail -f millennium" | docker exec -i aiblocks sh &
     go run travis.go

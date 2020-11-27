@@ -1,18 +1,18 @@
 #! /usr/bin/env bash
 set -e
 
-export STELLAR_HOME="/opt/stellar"
-export PGHOME="$STELLAR_HOME/postgresql"
-export SUPHOME="$STELLAR_HOME/supervisor"
-export COREHOME="$STELLAR_HOME/core"
-export HZHOME="$STELLAR_HOME/horizon"
+export AIBLOCKS_HOME="/opt/aiblocks"
+export PGHOME="$AIBLOCKS_HOME/postgresql"
+export SUPHOME="$AIBLOCKS_HOME/supervisor"
+export COREHOME="$AIBLOCKS_HOME/core"
+export HZHOME="$AIBLOCKS_HOME/millennium"
 
 export PGBIN="/usr/lib/postgresql/9.5/bin"
 export PGDATA="$PGHOME/data"
-export PGUSER="stellar"
+export PGUSER="aiblocks"
 export PGPORT=5432
 
-ENABLE_HORIZON_CAPTIVE_CORE=false
+ENABLE_MILLENNIUM_CAPTIVE_CORE=false
 ENABLE_CORE_MANUAL_CLOSE=false
 
 QUICKSTART_INITIALIZED=false
@@ -20,22 +20,22 @@ CURRENT_POSTGRES_PID=""
 
 function main() {
 	echo ""
-	echo "Starting Stellar Quickstart"
+	echo "Starting AiBlocks Quickstart"
 	echo ""
 
 	process_args $*
-	if [ "$NETWORK" != "standalone" ] && [ "$ENABLE_HORIZON_CAPTIVE_CORE" = "true" ]; then
-	  echo "--enable-horizon-captive-core is only supported in the standalone network" >&2
+	if [ "$NETWORK" != "standalone" ] && [ "$ENABLE_MILLENNIUM_CAPTIVE_CORE" = "true" ]; then
+	  echo "--enable-millennium-captive-core is only supported in the standalone network" >&2
 	  exit 1
 	fi
 
-	echo "mode: $STELLAR_MODE"
+	echo "mode: $AIBLOCKS_MODE"
 	echo "network: $NETWORK ($NETWORK_PASSPHRASE)"
 
 	copy_defaults
 	init_db
-	init_stellar_core
-	init_horizon
+	init_aiblocks_core
+	init_millennium
 	copy_pgpass
 
 	stop_postgres  # this gets started in init_db
@@ -68,8 +68,8 @@ function process_args() {
       export ENABLE_ASSET_STATS="$1"
       shift
       ;;
-    --enable-horizon-captive-core)
-      ENABLE_HORIZON_CAPTIVE_CORE=true
+    --enable-millennium-captive-core)
+      ENABLE_MILLENNIUM_CAPTIVE_CORE=true
       ;;
     --enable-core-manual-close)
       ENABLE_CORE_MANUAL_CLOSE=true
@@ -88,11 +88,11 @@ function process_args() {
 	case "$NETWORK" in
 	testnet)
     export NETWORK_PASSPHRASE="Test SDF Network ; September 2015"
-    export HISTORY_ARCHIVE_URLS="https://history.stellar.org/prd/core-testnet/core_testnet_001"
+    export HISTORY_ARCHIVE_URLS="https://history.aiblocks.io/prd/core-testnet/core_testnet_001"
     ;;
 	pubnet)
-    export NETWORK_PASSPHRASE="Public Global Stellar Network ; September 2015"
-    export HISTORY_ARCHIVE_URLS="https://history.stellar.org/prd/core-live/core_live_001"
+    export NETWORK_PASSPHRASE="Public Global AiBlocks Network ; September 2015"
+    export HISTORY_ARCHIVE_URLS="https://history.aiblocks.io/prd/core-live/core_live_001"
     ;;
 	standalone)
     export NETWORK_PASSPHRASE="Standalone Network ; February 2017"
@@ -105,11 +105,11 @@ function process_args() {
 	esac
 
 	# Are we ephemeral or persistent?
-	if [ -z "$STELLAR_MODE" ]; then
-		if [ -f "/opt/stellar/.docker-ephemeral" ]; then
-			STELLAR_MODE="ephemeral"
+	if [ -z "$AIBLOCKS_MODE" ]; then
+		if [ -f "/opt/aiblocks/.docker-ephemeral" ]; then
+			AIBLOCKS_MODE="ephemeral"
 		else
-			STELLAR_MODE="persistent"
+			AIBLOCKS_MODE="persistent"
 		fi
 	fi
 }
@@ -123,7 +123,7 @@ function set_pg_password() {
 	fi
 
 	# use a random password when ephemeral (or some other unknown mode)
-	if [ "$STELLAR_MODE" != "persistent" ]; then
+	if [ "$AIBLOCKS_MODE" != "persistent" ]; then
 		PGPASS=$(head /dev/urandom | tr -dc 'a-zA-Z0-9' |  head -c 16)
 		echo "postgres password: $PGPASS"
 		return 0
@@ -158,38 +158,38 @@ function copy_defaults() {
 	if [ -d $PGHOME/etc ]; then
 		echo "postgres: config directory exists, skipping copy"
 	else
-		$CP /opt/stellar-default/common/postgresql/ $PGHOME
+		$CP /opt/aiblocks-default/common/postgresql/ $PGHOME
 	fi
 
 	if [ -d $SUPHOME/etc ]; then
 		echo "supervisor: config directory exists, skipping copy"
 	else
-		$CP /opt/stellar-default/common/supervisor/ $SUPHOME
+		$CP /opt/aiblocks-default/common/supervisor/ $SUPHOME
 	fi
 
 	if [ -d $COREHOME/etc ]; then
-		echo "stellar-core: config directory exists, skipping copy"
+		echo "aiblocks-core: config directory exists, skipping copy"
 	else
-		$CP /opt/stellar-default/common/core/ $COREHOME
-		$CP /opt/stellar-default/$NETWORK/core/ $COREHOME
+		$CP /opt/aiblocks-default/common/core/ $COREHOME
+		$CP /opt/aiblocks-default/$NETWORK/core/ $COREHOME
 	fi
 
 	if [ -d $HZHOME/etc ]; then
-		echo "horizon: config directory exists, skipping copy"
+		echo "millennium: config directory exists, skipping copy"
 	else
-		$CP /opt/stellar-default/common/horizon/ $HZHOME
+		$CP /opt/aiblocks-default/common/millennium/ $HZHOME
 	fi
 }
 
 function copy_pgpass() {
 	local CP="rsync -a"
 
-	$CP /opt/stellar/postgresql/.pgpass /root/
+	$CP /opt/aiblocks/postgresql/.pgpass /root/
 	chmod 0600 /root/.pgpass
 
-	$CP /opt/stellar/postgresql/.pgpass /var/lib/stellar
-	chmod 0600 /var/lib/stellar/.pgpass
-	chown stellar:stellar /var/lib/stellar/.pgpass
+	$CP /opt/aiblocks/postgresql/.pgpass /var/lib/aiblocks
+	chmod 0600 /var/lib/aiblocks/.pgpass
+	chown aiblocks:aiblocks /var/lib/aiblocks/.pgpass
 }
 
 function init_db() {
@@ -207,7 +207,7 @@ function init_db() {
 
 	set_pg_password
 
-	run_silent "finalize-pgpass" sed -ri "s/__PGPASS__/$PGPASS/g" /opt/stellar/postgresql/.pgpass
+	run_silent "finalize-pgpass" sed -ri "s/__PGPASS__/$PGPASS/g" /opt/aiblocks/postgresql/.pgpass
 
 	mkdir -p $PGDATA
 	chown postgres:postgres $PGDATA
@@ -216,11 +216,11 @@ function init_db() {
 	run_silent "init-postgres" sudo -u postgres $PGBIN/initdb -D $PGDATA
 
 	start_postgres
-	run_silent "create-horizon-db" sudo -u postgres createdb horizon
+	run_silent "create-millennium-db" sudo -u postgres createdb millennium
 	run_silent "create-core-db" sudo -u postgres createdb core
-	run_silent "stellar-postgres-user" sudo -u postgres psql <<-SQL
+	run_silent "aiblocks-postgres-user" sudo -u postgres psql <<-SQL
 		CREATE USER $PGUSER WITH PASSWORD '$PGPASS';
-		GRANT ALL PRIVILEGES ON DATABASE horizon to $PGUSER;
+		GRANT ALL PRIVILEGES ON DATABASE millennium to $PGUSER;
 		GRANT ALL PRIVILEGES ON DATABASE core to $PGUSER;
 	SQL
 
@@ -228,39 +228,39 @@ function init_db() {
 	popd
 }
 
-function init_stellar_core() {
+function init_aiblocks_core() {
 	pushd $COREHOME
-	run_silent "chown-core" chown -R stellar:stellar .
+	run_silent "chown-core" chown -R aiblocks:aiblocks .
 	if [ -f $COREHOME/.quickstart-initialized ]; then
 		echo "core: already initialized"
 
 		if [ "$NETWORK" == "standalone" ]; then
 			start_postgres
 
-			run_silent "init-core-scp" sudo -u stellar stellar-core force-scp --conf $COREHOME/etc/stellar-core.cfg
+			run_silent "init-core-scp" sudo -u aiblocks aiblocks-core force-scp --conf $COREHOME/etc/aiblocks-core.cfg
 		fi
 
 		return 0
 	fi
 
-	run_silent "finalize-core-config-pgpass" sed -ri "s/__PGPASS__/$PGPASS/g" etc/stellar-core.cfg
+	run_silent "finalize-core-config-pgpass" sed -ri "s/__PGPASS__/$PGPASS/g" etc/aiblocks-core.cfg
 	local RUN_STANDALONE=false
-	if [ "$NETWORK" = "standalone" ] && [ "$HORIZON_ENABLE_CAPTIVE_CORE" = "false" ]; then
+	if [ "$NETWORK" = "standalone" ] && [ "$MILLENNIUM_ENABLE_CAPTIVE_CORE" = "false" ]; then
 	  RUN_STANDALONE=true
 	fi
-	run_silent "finalize-core-config-run-standalone" sed -ri "s/__RUN_STANDALONE__/$RUN_STANDALONE/g" etc/stellar-core.cfg
-	run_silent "finalize-core-config-manual-close" sed -ri "s/__MANUAL_CLOSE__/$ENABLE_CORE_MANUAL_CLOSE/g" etc/stellar-core.cfg
+	run_silent "finalize-core-config-run-standalone" sed -ri "s/__RUN_STANDALONE__/$RUN_STANDALONE/g" etc/aiblocks-core.cfg
+	run_silent "finalize-core-config-manual-close" sed -ri "s/__MANUAL_CLOSE__/$ENABLE_CORE_MANUAL_CLOSE/g" etc/aiblocks-core.cfg
 
 	start_postgres
 
-	run_silent "init-core-db" sudo -u stellar stellar-core new-db --conf etc/stellar-core.cfg
+	run_silent "init-core-db" sudo -u aiblocks aiblocks-core new-db --conf etc/aiblocks-core.cfg
 
 	if [ "$NETWORK" == "standalone" ]; then
-		run_silent "init-core-scp" sudo -u stellar stellar-core force-scp --conf etc/stellar-core.cfg
+		run_silent "init-core-scp" sudo -u aiblocks aiblocks-core force-scp --conf etc/aiblocks-core.cfg
 
-		run_silent "init-history" sudo -u stellar stellar-core new-hist vs --conf $COREHOME/etc/stellar-core.cfg
+		run_silent "init-history" sudo -u aiblocks aiblocks-core new-hist vs --conf $COREHOME/etc/aiblocks-core.cfg
 		# Start local history server
-		pushd /tmp/stellar-core/history/vs
+		pushd /tmp/aiblocks-core/history/vs
 		python3 -m http.server 1570 > /dev/null 2>&1 &
 		popd
 	fi
@@ -269,34 +269,34 @@ function init_stellar_core() {
 	popd
 }
 
-function init_horizon() {
+function init_millennium() {
 	if [ -f $HZHOME/.quickstart-initialized ]; then
-		echo "horizon: already initialized"
+		echo "millennium: already initialized"
 		return 0
 	fi
 	pushd $HZHOME
 
-	run_silent "chown-horizon" chown stellar:stellar .
+	run_silent "chown-millennium" chown aiblocks:aiblocks .
 
 	sed -ri \
 		-e "s/__PGPASS__/$PGPASS/g" \
 		-e "s/__NETWORK__/$NETWORK_PASSPHRASE/g" \
 		-e "s=__ARCHIVE__=$HISTORY_ARCHIVE_URLS=g" \
-		etc/horizon.env
+		etc/millennium.env
 
-	if [ "$ENABLE_HORIZON_CAPTIVE_CORE" = "true" ]; then
-	  cat << EOF >> etc/horizon.env
+	if [ "$ENABLE_MILLENNIUM_CAPTIVE_CORE" = "true" ]; then
+	  cat << EOF >> etc/millennium.env
 export ENABLE_CAPTIVE_CORE_INGESTION=true
-export STELLAR_CORE_BINARY_PATH=/usr/bin/stellar-core
-export STELLAR_CORE_CONFIG_PATH=/opt/stellar/core/etc/stellar-captive-core.cfg
+export AIBLOCKS_CORE_BINARY_PATH=/usr/bin/aiblocks-core
+export AIBLOCKS_CORE_CONFIG_PATH=/opt/aiblocks/core/etc/aiblocks-captive-core.cfg
 EOF
 	fi
 
 	start_postgres
-	run_silent "init-horizon-db" sudo -u stellar ./bin/horizon db init
+	run_silent "init-millennium-db" sudo -u aiblocks ./bin/millennium db init
 	if [ "$NETWORK" == "standalone" ]; then
 		# init-genesis-state command has not been released yet so ignore error and remove `|| true` later.
-		run_silent "init-genesis-state" sudo -u stellar ./bin/horizon expingest init-genesis-state || true
+		run_silent "init-genesis-state" sudo -u aiblocks ./bin/millennium expingest init-genesis-state || true
 	fi
 
 	touch .quickstart-initialized
@@ -307,7 +307,7 @@ function upgrade_standalone() {
 	# Upgrade standalone network's protocol version
 	if [ "$NETWORK" = "standalone" ]; then
 		# Wait for server
-		while ! echo "Stellar-core http server listening!" | nc localhost 11626 &> /dev/null; do sleep 1; done
+		while ! echo "AiBlocks-core http server listening!" | nc localhost 11626 &> /dev/null; do sleep 1; done
 		if [ -z "$PROTOCOL_VERSION" ]; then
 			# default to latest version supported by core
 			export PROTOCOL_VERSION=`curl -s http://localhost:11626/info | jq -r '.info.protocol_version'`

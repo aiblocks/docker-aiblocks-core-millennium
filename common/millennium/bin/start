@@ -1,0 +1,17 @@
+#! /bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+while ! psql -U aiblocks -c 'select 1' millennium &> /dev/null ; do
+  echo "Waiting for postgres to be available..."
+  sleep 1
+done
+
+while ! aiblocks-core --conf /opt/aiblocks/core/etc/aiblocks-core.cfg http-command info &> /dev/null ; do
+  echo "Waiting for aiblocks-core to be available..."
+  sleep 1
+done
+
+echo "starting millennium..."
+set -e
+exec $DIR/millennium

@@ -1,7 +1,7 @@
 __PHONY__: build build-testing
 
 build:
-	docker build -t stellar/quickstart -f Dockerfile .
+	docker build -t aiblocks/quickstart -f Dockerfile .
 
 build-testing:
-	docker build -t stellar/quickstart:testing -f Dockerfile.testing .
+	docker build -t aiblocks/quickstart:testing -f Dockerfile.testing .

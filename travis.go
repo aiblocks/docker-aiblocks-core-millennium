@@ -11,7 +11,7 @@ import (
 const timeout = 1 * time.Hour
 
 type Root struct {
-	HorizonSequence int32 `json:"history_latest_ledger"`
+	MillenniumSequence int32 `json:"history_latest_ledger"`
 	CoreSequence    int32 `json:"core_latest_ledger"`
 }
 
@@ -20,7 +20,7 @@ func main() {
 
 	for {
 		time.Sleep(10 * time.Second)
-		logLine("Waiting for Horizon to start ingesting")
+		logLine("Waiting for Millennium to start ingesting")
 
 		if time.Since(startTime) > timeout {
 			logLine("Timeout")
@@ -41,8 +41,8 @@ func main() {
 			continue
 		}
 
-		if root.HorizonSequence > 0 {
-			logLine("Horizon started ingesting!")
+		if root.MillenniumSequence > 0 {
+			logLine("Millennium started ingesting!")
 			os.Exit(0)
 		}
 	}

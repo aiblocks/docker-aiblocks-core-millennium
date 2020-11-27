@@ -1,9 +1,9 @@
 FROM ubuntu:16.04
 
-MAINTAINER Bartek Nowotarski <bartek@stellar.org>
+MAINTAINER AiBlocks Dev <dev@aiblocks.io>
 
-ENV STELLAR_CORE_VERSION 15.1.0-41
-ENV HORIZON_VERSION 1.12.0-92
+ENV AIBLOCKS_CORE_VERSION 15.1.0-41
+ENV MILLENNIUM_VERSION 1.12.0-92
 
 EXPOSE 5432
 EXPOSE 8000
@@ -19,16 +19,16 @@ ADD install /
 RUN ["chmod", "+x", "install"]
 RUN /install
 
-RUN ["mkdir", "-p", "/opt/stellar"]
-RUN ["touch", "/opt/stellar/.docker-ephemeral"]
+RUN ["mkdir", "-p", "/opt/aiblocks"]
+RUN ["touch", "/opt/aiblocks/.docker-ephemeral"]
 
-RUN ["ln", "-s", "/opt/stellar", "/stellar"]
-RUN ["ln", "-s", "/opt/stellar/core/etc/stellar-core.cfg", "/stellar-core.cfg"]
-RUN ["ln", "-s", "/opt/stellar/horizon/etc/horizon.env", "/horizon.env"]
-ADD common /opt/stellar-default/common
-ADD pubnet /opt/stellar-default/pubnet
-ADD testnet /opt/stellar-default/testnet
-ADD standalone /opt/stellar-default/standalone
+RUN ["ln", "-s", "/opt/aiblocks", "/aiblocks"]
+RUN ["ln", "-s", "/opt/aiblocks/core/etc/aiblocks-core.cfg", "/aiblocks-core.cfg"]
+RUN ["ln", "-s", "/opt/aiblocks/millennium/etc/millennium.env", "/millennium.env"]
+ADD common /opt/aiblocks-default/common
+ADD pubnet /opt/aiblocks-default/pubnet
+ADD testnet /opt/aiblocks-default/testnet
+ADD standalone /opt/aiblocks-default/standalone
 
 
 ADD start /
